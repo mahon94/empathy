@@ -3,8 +3,10 @@ import pandas as pd
 import numpy as np
 import random
 from PIL import Image
+import cv2
 import sys
-
+from matplotlib import pyplot as plt
+import os
 # fer2013 dataset:
 # Training       28709
 # PrivateTest     3589
@@ -16,9 +18,19 @@ emotion = {'Angry': 0, 'Disgust': 1, 'Fear': 2, 'Happy': 3,
 emo     = ['Angry', 'Fear', 'Happy',
            'Sad', 'Surprise', 'Neutral']
 
-def reconstruct(pix_str, size=(48,48)):
+def reconstruct(pix_str, histequalize, size=(48,48)):
     pix_arr = np.array(map(int, pix_str.split()))
-    return pix_arr.reshape(size)
+    pix_arr = pix_arr.reshape(size)
+    if histequalize:
+        pix= pix_arr.astype('uint8')
+        pix_image = cv2.cvtColor(pix, cv2.COLOR_GRAY2BGR)
+        pix_image = cv2.cvtColor(pix_image, cv2.COLOR_BGR2GRAY)
+        pix_equl = cv2.equalizeHist(pix_image)
+        # clahe =  cv2.createCLAHE(tileGridSize=(8, 8))
+        # pix_equl = clahe.apply(pix_image)
+        pix_arr = pix_equl
+
+    return pix_arr
 
 def emotion_count(y_train, classes, verbose=True):
     emo_classcount = {}
@@ -35,7 +47,8 @@ def emotion_count(y_train, classes, verbose=True):
 
 
 def load_data(sample_split=0.3, usage='Training', to_cat=True, verbose=True,
-              classes=['Angry','Happy'], filepath='../data/fer2013.csv'):
+              classes=['Angry','Happy'], histequalize=False, normalize=False,
+              filepath='../data/fer2013.csv'):
 
     '''sample a split of data with specified usage and only mentioned classes'''
     df = pd.read_csv(filepath)
@@ -51,9 +64,13 @@ def load_data(sample_split=0.3, usage='Training', to_cat=True, verbose=True,
     rows = random.sample(data.index, int(len(data)*sample_split))
     data = data.ix[rows]
     print '{} set for {}: {}'.format(usage, classes, data.shape)
-    data['pixels'] = data.pixels.apply(lambda x: reconstruct(x))
+    data['pixels'] = data.pixels.apply(lambda x: reconstruct(x, histequalize))
+    print ' CLAHE on data done! (contrast limiting adaptive histogram equalization)'
 
     x = np.array([mat for mat in data.pixels]) # (n_samples, img_width, img_height)
+    if normalize:
+        x = (x - np.mean(x, axis=0)) / np.std(x, axis=0)
+        print 'normalizing data'
     X_train = x.reshape(-1, 1, x.shape[1], x.shape[2])
     y_train, new_dict = emotion_count(data.emotion, classes, verbose)
     print new_dict
@@ -62,11 +79,13 @@ def load_data(sample_split=0.3, usage='Training', to_cat=True, verbose=True,
     return X_train, y_train, new_dict
 
 
-def save_data(X_train, y_train, fname='', folder='../data/', save_image = False):
+def save_data(X_train, y_train, fname='', folder='../data/', save_image = False, usage = ''):
     if save_image:
+        if not os.path.exists(folder+'images/'+usage ):
+            os.makedirs(folder+'images/'+usage )
         for i in range(len(X_train)):
             im = Image.fromarray(X_train[i][0].astype('uint8'))
-            im.save('../data/images/' + str(y_train[i].argmax()) + '_' + emo[y_train[i].argmax()]
+            im.save(folder+'images/'+usage+'/' + str(y_train[i].argmax()) + '_' + emo[y_train[i].argmax()]
                     + '_' + str(i) + fname + '.png')
     np.save(folder + 'X_' + fname, X_train)
     np.save(folder + 'y_' + fname, y_train)
@@ -76,19 +95,25 @@ if __name__ == '__main__':
     print 'Making moves...'
     emo = ['Angry', 'Fear', 'Happy',
            'Sad', 'Surprise', 'Neutral']
-    X_train, y_train, emo_dict = load_data(sample_split=1.0,
-                                           classes=emo,
-                                           usage='Training',
-                                           verbose=True)
+    usages = ['PrivateTest', 'PublicTest', 'Training']
+    for usage in usages:
+        print usage
+        X_train, y_train, emo_dict = load_data(sample_split=1.0,
+                                               classes=emo,
+                                               usage=usage,
+                                               histequalize=True,
+                                               normalize=False,#True,
+                                               verbose=True)
 
-    print 'Saving...'
+        print 'Saving...'
 
-    print X_train[:2]
-    print X_train[0][0]
-    print X_train[0][0].shape
-    print type(X_train[0][0])
+        print X_train[:2]
+        print X_train[0][0]
+        print X_train[0][0].shape
+        print type(X_train[0][0])
 
-    save_data(X_train, y_train, fname='_Training_fullsplit')
-    print X_train.shape
-    print y_train.shape
-    print 'Done!'
+        save_data(X_train, y_train, fname= usage + '_fullsplit',
+                  folder='../data/simple_histequalized/', save_image=False, usage=usage)
+        print X_train.shape
+        print y_train.shape
+        print 'Done!'
