@@ -245,15 +245,14 @@ X_train, y_train, X_val, y_val, X_test, y_test, datagen = load_data(data_path)
 print("Loading network/training configuration...")
 # model = zhangnet(network_name)
 # model = test2(network_name)
-model = vggnet()
+# model = vggnet()
 # model = kim()
-# model = shallow()
+model = shallow()
 # ---------------------------------------------------------
 #callbacks
 reduce_lr = ReduceLROnPlateau(monitor='val_loss', factor=0.5,
                               patience=25, min_lr=0.0001)
-checkpointer = ModelCheckpoint(filepath=store_path + 'weights.{epoch:02d}-{val_loss:.2f}-{val_acc:.5f}.hdf5',
-                               monitor='val_loss', verbose=1,
+checkpointer = ModelCheckpoint(filepath=store_path + 'weights.{epoch:02d}-{val_loss:.2f}-{val_acc:.5f}.hdf5', monitor='loss', verbose=1,
                                save_best_only=True, mode='min')
 earlystop = EarlyStopping(monitor='val_loss', min_delta=0.00001, patience=50, verbose=1)
 

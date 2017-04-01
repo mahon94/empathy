@@ -40,9 +40,9 @@ def reconstruct(pix_str, histequalize, size=(48,48)):
 
 def emotion_count(y_train, classes, verbose=True):
     emo_classcount = {}
-    print 'Disgust classified as Angry'
-    y_train.loc[y_train == 1] = 0
-    classes.remove('Disgust')
+    # print 'Disgust classified as Angry'
+    # y_train.loc[y_train == 1] = 0
+    # classes.remove('Disgust')
     for new_num, _class in enumerate(classes):
         y_train.loc[(y_train == emotion[_class])] = new_num
         class_count = sum(y_train == (new_num))
@@ -62,7 +62,6 @@ def load_data(sample_split=0.3, usage='Training', to_cat=True, verbose=True,
     # print df.Usage.value_counts()
     df = df[df.Usage == usage]
     frames = []
-    classes.append('Disgust')
     for _class in classes:
         class_df = df[df['emotion'] == emotion[_class]]
         frames.append(class_df)
@@ -120,8 +119,8 @@ if __name__ == '__main__':
     # makes the numpy arrays ready to use:
     print 'Making moves...'
     emo = ['Angry', 'Fear', 'Happy',
-           'Sad', 'Surprise', 'Neutral']
-    usages = ['PrivateTest']#, 'PublicTest', 'Training']
+           'Sad', 'Surprise', 'Neutral', 'Disgust']
+    usages = ['PrivateTest', 'PublicTest', 'Training']
     for usage in usages:
         print usage
         X_train, y_train, emo_dict = load_data(sample_split=1.0,
@@ -139,9 +138,9 @@ if __name__ == '__main__':
         print X_train[0][0].shape
         print type(X_train[0][0])
 
-        # save_data(X_train, y_train, fname= usage + '_fullsplit',
-        #           folder='../data/alaki/', save_image=False, usage=usage)
-        #
-        # print X_train.shape
-        # print y_train.shape
-        # print 'Done!'
+        save_data(X_train, y_train, fname= usage + '_fullsplit',
+                  folder='../data/7class_simple_normalized/', save_image=False, usage=usage)
+
+        print X_train.shape
+        print y_train.shape
+        print 'Done!'
