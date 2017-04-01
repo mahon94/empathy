@@ -165,6 +165,26 @@ def kim():
     model.add(Dense(NB_CLASSES, activation='softmax'))
     return model
 
+def shallow():
+    model = Sequential()
+    model.add(Convolution2D(32, 3, 3, border_mode='same', activation='relu',
+                            input_shape=(1, X_train.shape[2], X_train.shape[3])))
+    model.add(MaxPooling2D(pool_size=(2, 2)))  # , dim_ordering='th'))
+    model.add(normalization.BatchNormalization())
+    # CPN2
+    model.add(Convolution2D(64, 3, 3, border_mode='same',
+                            activation='relu'))
+    model.add(MaxPooling2D(pool_size=(2, 2)))  # , dim_ordering='th'))
+    model.add(normalization.BatchNormalization())
+
+    model.add(Flatten())  # this converts our 3D feature maps to 1D feature vectors
+    model.add(Dense(512, activity_regularizer=regularizers.l2(0.0001)))
+    model.add(myELU)
+    model.add(normalization.BatchNormalization())
+    model.add(Dropout(0.5))
+    model.add(Dense(NB_CLASSES, activation='softmax'))
+    return model
+
 
 def vggnet():
     model = Sequential()
@@ -226,7 +246,8 @@ print("Loading network/training configuration...")
 # model = zhangnet(network_name)
 # model = test2(network_name)
 # model = vggnet()
-model = kim()
+# model = kim()
+model = shallow()
 # ---------------------------------------------------------
 #callbacks
 reduce_lr = ReduceLROnPlateau(monitor='val_loss', factor=0.5,

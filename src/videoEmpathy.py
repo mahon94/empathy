@@ -39,32 +39,13 @@ model_path = sys.argv[2]
 cascade_classifier = cv2.CascadeClassifier(CASC_PATH)
 #
 
-def load_model():
-    '''load json and create model'''
-    json_file = open(model_path, 'r')
-    loaded_model_json = json_file.read()
-    json_file.close()
-    model = model_from_json(loaded_model_json)
-
-    # -------------------------------------------------
-    # load weights into new model
-    model.load_weights(weights_path)
-    myadam = adam(lr=0.01)
-    model.compile(loss='categorical_crossentropy',
-                  optimizer=myadam,  # 'adam',
-                  metrics=['accuracy'])
-    # model = compile_model(model)
-
-    print("Loaded model from disk")
-
-    return model
 
 
 def brighten(data, b):
     datab = data * b
     return datab
 
-
+iter = 0
 def format_image(myimage):
     # myimage = cv2.imread('../data/images/2_Happy_1306_train.png', cv2.IMREAD_GRAYSCALE)
     # # myimage = image.img_to_array(myimage)
@@ -101,10 +82,14 @@ def format_image(myimage):
         print("[+] Problem during resize")
         return None
 
-    # cv2.imshow("Lol", myimage)
-    # cv2.waitKey(0)
+    print(myimage)
+    cv2.imshow("Lol", myimage)
+    # if iter<10:
+    cv2.imwrite(str(iter) + '.png', myimage)
+    cv2.waitKey(1)
 
     print(myimage.shape)
+
     myimage = np.expand_dims(myimage, axis=0)
     myimage = np.expand_dims(myimage, axis=0)
     print(myimage.shape)
@@ -115,7 +100,7 @@ def format_image(myimage):
 
 
 # Load Model
-network = load_model()
+network = load_model(model_path, weights_path)
 
 video_capture = cv2.VideoCapture(0)
 font = cv2.FONT_HERSHEY_SIMPLEX
@@ -133,28 +118,32 @@ while True:
         tmp = format_image(frame)
         if tmp == None:
             continue
-        result = network.predict(tmp, batch_size=1)
+        # result = network.predict(tmp, batch_size=1)
 
+        # print(EMOTIONS[np.argmax(result)])
+        raw_input('Press enter to continue: ')
+        iter += 1
         # Draw face in frame
+
         # for (x,y,w,h) in faces:
         #   cv2.rectangle(frame, (x,y), (x+w,y+h), (255,0,0), 2)
 
         # Write results in frame
-        if result is not None:
-            print(result)
-            for index, emotion in enumerate(EMOTIONS):
-                cv2.putText(frame, emotion, (10, index * 20 + 20), cv2.FONT_HERSHEY_PLAIN, 0.5, (0, 255, 0), 1);
-                cv2.rectangle(frame, (130, index * 20 + 10), (130 + int(result[0][index] * 100), (index + 1) * 20 + 4),
-                              (255, 0, 0), -1)
-
-            face_image = feelings_faces[np.argmax(result)]
-
-            # Ugly transparent fix
-            for c in range(0, 3):
-                frame[200:320, 10:130, c] = face_image[:, :, c] * (face_image[:, :, 3] / 255.0) + frame[200:320, 10:130,
-                                                                                                  c] * (
-                                                                                                  1.0 - face_image[:, :,
-                                                                                                        3] / 255.0)
+        # if result is not None:
+        #     print(result)
+        #     for index, emotion in enumerate(EMOTIONS):
+        #         cv2.putText(frame, emotion, (10, index * 20 + 20), cv2.FONT_HERSHEY_PLAIN, 0.5, (0, 255, 0), 1);
+        #         cv2.rectangle(frame, (130, index * 20 + 10), (130 + int(result[0][index] * 100), (index + 1) * 20 + 4),
+        #                       (255, 0, 0), -1)
+        #
+        #     face_image = feelings_faces[np.argmax(result)]
+        #
+        #     # Ugly transparent fix
+        #     # for c in range(0, 3):
+        #     #     frame[200:320, 10:130, c] = face_image[:, :, c] * (face_image[:, :, 3] / 255.0) + frame[200:320, 10:130,
+        #     #                                                                                       c] * (
+        #     #                                                                                       1.0 - face_image[:, :,
+        #     #                                                                                             3] / 255.0)
 
         # Display the resulting frame
         cv2.imshow('Video', frame)

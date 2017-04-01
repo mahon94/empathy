@@ -21,8 +21,7 @@ IMG_ROWS, IMG_COLS = 48, 48
 IMG_CHANNELS = 1
 DATA_AUGMENTATION = True #False #
 CASC_PATH = '../haarcascades/haarcascade_frontalface_default.xml'
-EMOTIONS = ['angry', 'fearful', 'happy', 'sad', 'surprised', 'neutral']#, 'disgusted'
-
+EMOTIONS = ['Angry', 'Fear', 'Happy','Sad', 'Surprise', 'Neutral']#, 'disgust'
 
 endtime = time.asctime(time.localtime(time.time()))
 
@@ -50,9 +49,9 @@ def load_data(data_path):
     y_test = np.load(y_fname)
     X_test = X_test.astype('float32')
 
-    X_train /= 255.0
-    X_val /= 255.0
-    X_test /= 255.0
+    # X_train /= 255.0
+    # X_val /= 255.0
+    # X_test /= 255.0
     datagen = None
 
     if DATA_AUGMENTATION:
@@ -67,6 +66,27 @@ def load_data(data_path):
     else:
         print('Not using data augmentation.')
     return X_train, y_train, X_val, y_val, X_test, y_test, datagen
+
+
+def load_model(model_path, weights_path):
+    '''load json and create model'''
+    json_file = open(model_path, 'r')
+    loaded_model_json = json_file.read()
+    json_file.close()
+    model = model_from_json(loaded_model_json)
+
+    # -------------------------------------------------
+    # load weights into new model
+    model.load_weights(weights_path)
+    myadam = adam(lr=0.01)
+    model.compile(loss='categorical_crossentropy',
+                  optimizer=myadam,  # 'adam',
+                  metrics=['accuracy'])
+    # model = compile_model(model)
+
+    print("Loaded model from disk")
+
+    return model
 
 
 def save_model(model, dirpath='../data/results/'):
