@@ -57,8 +57,8 @@ def load_data(data_path):
     if DATA_AUGMENTATION:
         print("Using real-time data augmentation")
         datagen = ImageDataGenerator(
-            featurewise_center=True,  # set input mean to 0 over the dataset
-            featurewise_std_normalization=True,  # divide inputs by std of the dataset
+            featurewise_center=False, #True,  # set input mean to 0 over the dataset
+            featurewise_std_normalization=False, #True,  # divide inputs by std of the dataset
             width_shift_range=0.1,  # randomly shift images horizontally (fraction of total width)
             height_shift_range=0.1,  # randomly shift images vertically (fraction of total height)
             horizontal_flip=True)  # randomly flip images

@@ -12,6 +12,7 @@ from keras.layers.advanced_activations import ELU
 from keras.callbacks import ReduceLROnPlateau, ModelCheckpoint, EarlyStopping, TensorBoard, BaseLogger
 # from log import save_model, save_config, save_result
 from keras.models import model_from_json
+# from keras.utils import plot_model
 import numpy as np
 import sys
 import time
@@ -22,7 +23,7 @@ from shared import *
 #params
 BATCH_SIZE = 128
 NB_CLASSES = 7
-NB_EPOCH = 500
+NB_EPOCH = 200
 CONTINUEING = False #True
 PRINT_MODEL_SUMMARY = True
 SAVE_MODEL_PLOT = True
@@ -137,6 +138,8 @@ def test2(network_name = 'network14_zhang_equalized_data'):
     model.add(Flatten())  # this converts our 3D feature maps to 1D feature vectors
     model.add(Dense(64, activation='relu'))
     model.add(Dense(64, activation='relu'))
+    model.add(Dropout(0.5))
+    model.add(normalization.BatchNormalization())
     model.add(Dense(NB_CLASSES, activation='softmax'))
     return model
 
@@ -226,7 +229,7 @@ def vggnet():
     model.add(Flatten())
     model.add(Dense(1024, activity_regularizer=regularizers.l2(0.0001)))
     model.add(Activation('relu'))
-    # model.add(Dropout(0.5))
+    model.add(Dropout(0.5))
     model.add(Dense(NB_CLASSES))
     model.add(Activation('softmax'))
 
@@ -253,11 +256,12 @@ model = vggnet()
 reduce_lr = ReduceLROnPlateau(monitor='val_loss', factor=0.5,
                               patience=25, min_lr=0.0001)
 checkpointer = ModelCheckpoint(filepath=store_path + 'weights.{epoch:02d}-{val_loss:.2f}-{val_acc:.5f}.hdf5',
-                               monitor='val_loss', verbose=1,
+                               monitor='val_acc', verbose=1,
                                save_best_only=True, mode='min')
 earlystop = EarlyStopping(monitor='val_loss', min_delta=0.00001, patience=50, verbose=1)
 
-callbks = [reduce_lr, checkpointer, earlystop, TensorBoard(log_dir=store_path+'log/'), BaseLogger()]
+callbks = [reduce_lr, checkpointer, earlystop, TensorBoard(log_dir=store_path+'log/', write_images=True, histogram_freq=0,
+          write_graph=True), BaseLogger()]
 
 
 if CONTINUEING:
@@ -283,7 +287,10 @@ save_model(model, store_path)
 save_config(model.get_config(), store_path)
 
 
+
+
 if DATA_AUGMENTATION == False:
+    print('running without data augmentation')
     hist = model.fit(X_train, y_train,
                      batch_size=BATCH_SIZE,
                      nb_epoch=NB_EPOCH,
@@ -291,19 +298,22 @@ if DATA_AUGMENTATION == False:
                      shuffle=True, verbose=1, callbacks=callbks)
 
 else:
-
+    print('augmenting data on the fly')
     hist = model.fit_generator(datagen.flow(X_train, y_train,
                         batch_size=BATCH_SIZE),
                         samples_per_epoch=X_train.shape[0],
                         nb_epoch=NB_EPOCH,
-                        validation_data=(X_test, y_test),
+                        nb_val_samples= X_val.shape[0],
+                        validation_data=datagen.flow(X_val, y_val, batch_size=BATCH_SIZE),
                         verbose=1, callbacks=callbks)
 
 
 if SAVE_MODEL_PLOT:
     print("Saving model plot...")
     from keras.utils.visualize_util import plot
-    plot(model, to_file=(store_path + 'deepRL.png'), show_shapes=True)
+    plot(model, to_file=(store_path + '.png'), show_shapes=True)
+
+    # plot_model(model, to_file=(store_path + 'model.png'))
 
 train_val_accuracy = hist.history
 train_acc = train_val_accuracy['acc']

@@ -126,7 +126,7 @@ if __name__ == '__main__':
         X_train, y_train, emo_dict = load_data(sample_split=1.0,
                                                classes=emo,
                                                usage=usage,
-                                               histequalize=False,#True,
+                                               histequalize=True,#False,#
                                                normalize=True,#False,#
                                                verbose=True)
 
@@ -139,7 +139,7 @@ if __name__ == '__main__':
         print type(X_train[0][0])
 
         save_data(X_train, y_train, fname= usage + '_fullsplit',
-                  folder='../data/7class_simple_normalized/', save_image=False, usage=usage)
+                  folder='../data/7class_simple_normalized_histequal/', save_image=False, usage=usage)
 
         print X_train.shape
         print y_train.shape

@@ -246,8 +246,8 @@ print("Loading network/training configuration...")
 # model = zhangnet(network_name)
 # model = test2(network_name)
 # model = vggnet()
-# model = kim()
-model = shallow()
+model = kim()
+# model = shallow()
 # ---------------------------------------------------------
 #callbacks
 reduce_lr = ReduceLROnPlateau(monitor='val_loss', factor=0.5,
@@ -290,12 +290,12 @@ if DATA_AUGMENTATION == False:
                      shuffle=True, verbose=1, callbacks=callbks)
 
 else:
-
+    print('augmenting data on the fly')
     hist = model.fit_generator(datagen.flow(X_train, y_train,
                         batch_size=BATCH_SIZE),
                         samples_per_epoch=X_train.shape[0],
                         nb_epoch=NB_EPOCH,
-                        validation_data=(X_test, y_test),
+                        validation_data=datagen.flow(X_val, y_val, batch_size=BATCH_SIZE),
                         verbose=1, callbacks=callbks)
 
 
