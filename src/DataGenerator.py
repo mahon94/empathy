@@ -15,7 +15,7 @@ import os
 # emotion labels from FER2013:
 emotion = {'Angry': 0, 'Disgust': 1, 'Fear': 2, 'Happy': 3,
            'Sad': 4, 'Surprise': 5, 'Neutral': 6}
-emo     = ['Angry', 'Fear', 'Happy',
+emo     = ['Angry', 'Disgust', 'Fear', 'Happy',
            'Sad', 'Surprise', 'Neutral']
 
 
@@ -38,18 +38,33 @@ def reconstruct(pix_str, histequalize, size=(48,48)):
 
     return pix_arr
 
-def emotion_count(y_train, classes, verbose=True):
-    emo_classcount = {}
-    # print 'Disgust classified as Angry'
+# print 'Disgust classified as Angry'
     # y_train.loc[y_train == 1] = 0
     # classes.remove('Disgust')
+
+# def emotion_count(y_train, classes, verbose=True):
+#     emo_classcount = {}
+#
+#     for new_num, _class in enumerate(classes):
+#         print _class
+#         y_train.loc[(y_train == emotion[_class])] = new_num
+#         class_count = sum(y_train == (new_num))
+#         if verbose:
+#             print '{}: {} with {} samples'.format(new_num, _class, class_count)
+#         emo_classcount[_class] = (new_num, class_count)
+#     return y_train.values, emo_classcount
+
+def emotion_count(y_train, classes, verbose=True):
+    emo_classcount = {}
+
     for new_num, _class in enumerate(classes):
-        y_train.loc[(y_train == emotion[_class])] = new_num
+        # y_train.loc[(y_train == emotion[_class])] = new_num
         class_count = sum(y_train == (new_num))
         if verbose:
-            print '{}: {} with {} samples'.format(new_num, _class, class_count)
+            print '{}: {} with {} samples. class emotion{}'.format(new_num, _class, class_count,emotion[_class])
         emo_classcount[_class] = (new_num, class_count)
     return y_train.values, emo_classcount
+
 
 
 def load_data(sample_split=0.3, usage='Training', to_cat=True, verbose=True,
@@ -81,9 +96,6 @@ def load_data(sample_split=0.3, usage='Training', to_cat=True, verbose=True,
         each_pixle_std = np.std(x, axis=0)
         print "mean" , each_pixel_mean
         print "std" , each_pixle_std
-
-
-
         x = np.divide(np.subtract(x,each_pixel_mean),each_pixle_std)
         each_pixel_mean = x.mean(axis=0)
         each_pixle_std = np.std(x, axis=0)
@@ -95,8 +107,13 @@ def load_data(sample_split=0.3, usage='Training', to_cat=True, verbose=True,
         print 'normalizing data'
 
     X_train = x.reshape(-1, 1, x.shape[1], x.shape[2])
+    print data.emotion.loc[(data.emotion== 2)]
     y_train, new_dict = emotion_count(data.emotion, classes, verbose)
+    # y_train = data.emotion.values
+    print y_train.shape
     print new_dict
+    print np.array(y_train[y_train==1])
+    print 'now'
     if to_cat:
         y_train = to_categorical(y_train)
     return X_train, y_train, new_dict
@@ -118,16 +135,17 @@ def save_data(X_train, y_train, fname='', folder='../data/', save_image = False,
 if __name__ == '__main__':
     # makes the numpy arrays ready to use:
     print 'Making moves...'
-    emo = ['Angry', 'Fear', 'Happy',
-           'Sad', 'Surprise', 'Neutral', 'Disgust']
+    # emo = ['Angry', 'Fear', 'Happy',
+    #        'Sad', 'Surprise', 'Neutral', 'Disgust']
     usages = ['PrivateTest', 'PublicTest', 'Training']
     for usage in usages:
         print usage
-        X_train, y_train, emo_dict = load_data(sample_split=1.0,
+
+        X_train, y_train  , emo_dict= load_data(sample_split=1.0,
                                                classes=emo,
                                                usage=usage,
-                                               histequalize=True,#False,#
-                                               normalize=True,#False,#
+                                               histequalize=False,#True,#
+                                               normalize=True,#
                                                verbose=True)
 
         print 'Saving...'
@@ -139,7 +157,7 @@ if __name__ == '__main__':
         print type(X_train[0][0])
 
         save_data(X_train, y_train, fname= usage + '_fullsplit',
-                  folder='../data/7class_simple_normalized_histequal/', save_image=False, usage=usage)
+                  folder='../data/7class_normalized_correct/', save_image=True, usage=usage)
 
         print X_train.shape
         print y_train.shape

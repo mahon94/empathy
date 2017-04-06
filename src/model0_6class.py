@@ -1,5 +1,6 @@
 from __future__ import print_function
 import keras.backend as K
+from keras.backend.common import set_image_data_format
 from keras.preprocessing.image import ImageDataGenerator # for data augmentation if needed
 from keras.models import Sequential
 from keras.layers import Dense, Dropout, Activation, Flatten, normalization
@@ -52,6 +53,8 @@ if not os.path.exists(store_path):
 if not os.path.exists(store_path+'log/'):
     os.makedirs(store_path+'log/')
 #-------------------------------------------------------
+
+set_image_data_format('channels_first')
 
 def compile_model(model):
     myadam = adam(lr=0.01)
@@ -144,6 +147,31 @@ def test2(network_name = 'network14_zhang_equalized_data'):
     return model
 
 def kim():
+    # model architecture:
+    model = Sequential()
+    model.add(Convolution2D(32, 5, 5, border_mode='same', activation='relu',
+                            input_shape=(1, X_train.shape[2], X_train.shape[3]), name='conv1'))
+    model.add(MaxPooling2D(pool_size=(3, 3), strides=(2, 2), border_mode='same', name='maxpooling1'))
+    model.add(normalization.BatchNormalization( name='BN1'))
+
+    model.add(Convolution2D(32, 4, 4, border_mode='same', activation='relu', name='conv2'))
+    model.add(MaxPooling2D(pool_size=(3, 3), strides=(2, 2), border_mode='same', name='maxpooling2'))
+    model.add(normalization.BatchNormalization( name='BN2'))
+
+    model.add(Convolution2D(64, 5, 5, border_mode='same', activation='relu', name='conv3'))
+    model.add(MaxPooling2D(pool_size=(3, 3), strides=(2, 2), border_mode='same', name='maxpooling3'))
+    model.add(normalization.BatchNormalization( name='BN3'))
+
+
+    model.add(Flatten())  # this converts our 3D feature maps to 1D feature vectors
+    model.add(Dense(1024, activity_regularizer=regularizers.l2(0.0001)))
+    model.add(myELU)
+    model.add(Dropout(0.5))
+    model.add(normalization.BatchNormalization())
+    model.add(Dense(NB_CLASSES, activation='softmax'))
+    return model
+
+def kim_CKPlus():
     # model architecture:
     model = Sequential()
     model.add(Convolution2D(32, 5, 5, border_mode='same', activation='relu',
@@ -248,15 +276,15 @@ X_train, y_train, X_val, y_val, X_test, y_test, datagen = load_data(data_path)
 print("Loading network/training configuration...")
 # model = zhangnet(network_name)
 # model = test2(network_name)
-model = vggnet()
+# model = vggnet()
 # model = kim()
-# model = shallow()
+model = shallow()
 # ---------------------------------------------------------
 #callbacks
 reduce_lr = ReduceLROnPlateau(monitor='val_loss', factor=0.5,
                               patience=25, min_lr=0.0001)
 checkpointer = ModelCheckpoint(filepath=store_path + 'weights.{epoch:02d}-{val_loss:.2f}-{val_acc:.5f}.hdf5',
-                               monitor='val_acc', verbose=1,
+                               monitor='val_loss', verbose=1,
                                save_best_only=True, mode='min')
 earlystop = EarlyStopping(monitor='val_loss', min_delta=0.00001, patience=50, verbose=1)
 
@@ -271,11 +299,18 @@ if CONTINUEING:
 # Let's train the model using adam
 model = compile_model(model)
 
+#--------------------------------------------
+
+
+#--------------------------------------
+
+
 if CONTINUEING:
     loss_and_metrics2 = model.evaluate(X_val, y_val, batch_size=128, verbose=1)
     loss_and_metrics3 = model.evaluate(X_test, y_test, batch_size=128, verbose=1)
     print('val_acc: ', loss_and_metrics2)
     print('test_acc: ' , loss_and_metrics3)
+
 
 if PRINT_MODEL_SUMMARY:
     print("Model summary...")
@@ -283,6 +318,17 @@ if PRINT_MODEL_SUMMARY:
 
 describe()
 # save model
+if SAVE_MODEL_PLOT:
+    from keras.utils import plot_model
+
+    plot_model(model, to_file=(store_path + network_name + '.png'), show_shapes=False)
+    # from keras.utils.vis_utils import plot
+    # plot(model, to_file=(store_path + network_name + '.png'), show_shapes=False)
+    print("Saving model plot...")
+    print (store_path)
+    # plot_model(model, to_file=(store_path + 'model.png'))
+
+# exit()
 save_model(model, store_path)
 save_config(model.get_config(), store_path)
 
@@ -308,12 +354,6 @@ else:
                         verbose=1, callbacks=callbks)
 
 
-if SAVE_MODEL_PLOT:
-    print("Saving model plot...")
-    from keras.utils.visualize_util import plot
-    plot(model, to_file=(store_path + '.png'), show_shapes=True)
-
-    # plot_model(model, to_file=(store_path + 'model.png'))
 
 train_val_accuracy = hist.history
 train_acc = train_val_accuracy['acc']

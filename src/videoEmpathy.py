@@ -25,6 +25,8 @@ from shared import *
 # print(len(sys.argv))
 # print(sys.argv[1])
 
+from keras.backend.common import set_image_data_format
+set_image_data_format('channels_first')
 
 
 if len(sys.argv) != 3:
@@ -45,7 +47,7 @@ def brighten(data, b):
     datab = data * b
     return datab
 
-
+iter = 0
 def format_image(myimage):
     if len(myimage.shape) > 2 and myimage.shape[2] == 3:
         myimage = cv2.cvtColor(myimage, cv2.COLOR_BGR2GRAY)
@@ -77,17 +79,24 @@ def format_image(myimage):
     # cv2.imshow("Lol", myimage)
     # # if iter<10:
     # cv2.imwrite(str(iter) + '.png', myimage.astype('uint8'))
+    #
     # cv2.waitKey(1)
 
     print(myimage.shape)
     # myimage.reshape(-1,1,image.shape[0], image.shape[1])
+    # myimage = myimage-
+    img_mean = myimage.mean()
+    img_std = np.std(myimage)
+    myimage = np.divide(np.subtract(myimage, img_mean), img_std)
+    # myimage = myimage / 255.0
     myimage = np.expand_dims(myimage, axis=0)
     myimage = np.expand_dims(myimage, axis=0)
     print(myimage.shape)
     myimage = myimage.astype('float32')
-    myimage = myimage / 255.0
 
-    return myimage
+    print('face:', face)
+
+    return myimage, face
 
 
 # Load Model
@@ -98,42 +107,65 @@ font = cv2.FONT_HERSHEY_SIMPLEX
 
 feelings_faces = []
 for index, emotion in enumerate(EMOTIONS):
-    feelings_faces.append(cv2.imread('../emojis/' + emotion + '.png', -1))
+    feelings_faces.append(cv2.imread('../emojis2/' + emotion + '.png', -1))
 
 while True:
     # Capture frame-by-frame
     ret, frame = video_capture.read()
 
     # Predict result with network
+    # cv2.imshow(frame,)
     if frame is not None:
         tmp = format_image(frame)
         if tmp == None:
             continue
+        iter += 1
+        tmp , face = tmp
+        # cv2.imwrite(str(time.clock()) + '.jpg', face.astype('uint8'))
         result = network.predict(tmp, batch_size=1)
 
-        print(EMOTIONS[np.argmax(result)])
-        # Draw face in frame
-
-        # for (x,y,w,h) in faces:
-        #   cv2.rectangle(frame, (x,y), (x+w,y+h), (255,0,0), 2)
 
         # Write results in frame
+        h = frame.shape[0] - 180
         if result is not None:
+            print(EMOTIONS[np.argmax(result)])
+            # Draw face in frame
+
+            # for (x,y,w,h) in faces:
+            (x, y, w, h) = face
+            cv2.rectangle(frame, (x, y), (x + w, y + h), (255, 0, 0), 1)
+            cv2.rectangle(frame, (x, y - 15), (x + w, y), (255, 0, 0), -1)
+            cv2.putText(frame, EMOTIONS[np.argmax(result)], (x, y - 5), cv2.FONT_HERSHEY_PLAIN, 0.8, (255, 255, 255), 1)
+
             print(result)
-            for index, emotion in enumerate(EMOTIONS):
-                cv2.putText(frame, emotion, (10, index * 20 + 20), cv2.FONT_HERSHEY_PLAIN, 0.5, (0, 255, 0), 1);
-                cv2.rectangle(frame, (130, index * 20 + 10), (130 + int(result[0][index] * 100), (index + 1) * 20 + 4),
-                              (255, 0, 0), -1)
+            # cv2.rectangle(frame,(0,h -200), (200, h), (255, 255, 255), -1)
+
 
             face_image = feelings_faces[np.argmax(result)]
 
+
+
+            # for i in face_:
+            #     face_image[i] = cv2.resize(face_image[i],(20,20), interpolation=cv2.INTER_CUBIC)
+
+            for index, emotion in enumerate(EMOTIONS):
+                # index+=5
+                cv2.putText(frame, emotion, (10, index * 20 + 20+h), cv2.FONT_HERSHEY_PLAIN, 0.8, (0, 255, 0), 1)
+
+
+
+                cv2.rectangle(frame, (80, index * 20 + 10+h), (80 + int(result[0][index] * 100), (index + 1) * 20 + 4+h),
+                              (255, 0, 0), -1)
+
+
+            # frame[200:320, 10:130]=face_image[:,:,:3]
+
             # Ugly transparent fix
-            for c in range(0, 3):
-                frame[200:320, 10:130, c] = face_image[:, :, c] #* (face_image[:, :, 3] / 255.0)
-        #  + frame[200:320, 10:130,
-                #                                                                                   c] * (
-                #                                                                                   1.0 - face_image[:, :,
-                #                                                                                         3] / 255.0)
+            # for c in range(0, 3):
+            #     frame[200:264, 10:74, c] = face_image[:, :, c] * (face_image[:, :, 3] / 255.0) + frame[200:264, 10:74,
+            #                                                                                       c] * (
+            #                                                                                       1.0 - face_image[:, :,
+            #                                                                                             3] / 255.0)
 
         # Display the resulting frame
         cv2.imshow('Video', frame)

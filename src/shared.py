@@ -19,9 +19,9 @@ import os
 #parameters:
 IMG_ROWS, IMG_COLS = 48, 48
 IMG_CHANNELS = 1
-DATA_AUGMENTATION = True #False #
+DATA_AUGMENTATION =True#False #
 CASC_PATH = '../haarcascades/haarcascade_frontalface_default.xml'
-EMOTIONS = ['Angry', 'Fear', 'Happy','Sad', 'Surprise', 'Neutral', 'disgust']
+EMOTIONS = ['Angry','Disgust', 'Fear', 'Happy','Sad', 'Surprise', 'Neutral']
 
 endtime = time.asctime(time.localtime(time.time()))
 
